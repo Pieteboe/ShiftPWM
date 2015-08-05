@@ -32,7 +32,6 @@ CShiftPWM::CShiftPWM(int timerInUse, bool noSPI, int latchPin, int dataPin, int 
 	m_amountOfOutputs = 0;
 	m_counter = 0;
 	m_pinGrouping = 1; // Default = RGBRGBRGB... PinGrouping = 3 means: RRRGGGBBBRRRGGGBBB...
-
 	unsigned char * m_PWMValues=0;
 }
 
@@ -112,18 +111,18 @@ void CShiftPWM::SetGroupOf5(int group, unsigned char v0,unsigned char v1,unsigne
 void CShiftPWM::SetRGB(int led, unsigned char r,unsigned char g,unsigned char b, int offset){
 	int skip = 2*m_pinGrouping*(led/m_pinGrouping); // is not equal to 2*led. Division is rounded down first.
 	if(IsValidPin(led+skip+offset+2*m_pinGrouping) ){
-		m_PWMValues[led+skip+offset]					=( (unsigned int) r * m_maxBrightness)>>8;
-		m_PWMValues[led+skip+offset+m_pinGrouping]		=( (unsigned int) g * m_maxBrightness)>>8;
-		m_PWMValues[led+skip+offset+2*m_pinGrouping]	=( (unsigned int) b * m_maxBrightness)>>8;
+		m_PWMValues[pmap[led+skip+offset]]				=( (unsigned int) r * m_maxBrightness)>>8;
+		m_PWMValues[pmap[led+skip+offset+m_pinGrouping]]		=( (unsigned int) g * m_maxBrightness)>>8;
+		m_PWMValues[pmap[led+skip+offset+2*m_pinGrouping]]	=( (unsigned int) b * m_maxBrightness)>>8;
 	}
 }
 
 void CShiftPWM::SetAllRGB(unsigned char r,unsigned char g,unsigned char b){
 	for(int k=0 ; (k+3*m_pinGrouping-1) < m_amountOfOutputs; k+=3*m_pinGrouping){
 		for(int l=0; l<m_pinGrouping;l++){
-			m_PWMValues[k+l]				=	( (unsigned int) r * m_maxBrightness)>>8;
-			m_PWMValues[k+l+m_pinGrouping]	=	( (unsigned int) g * m_maxBrightness)>>8;
-			m_PWMValues[k+l+m_pinGrouping*2]	=	( (unsigned int) b * m_maxBrightness)>>8;
+			m_PWMValues[pmap[k+l]]			=	( (unsigned int) r * m_maxBrightness)>>8;
+			m_PWMValues[pmap[k+l+m_pinGrouping]]	=	( (unsigned int) g * m_maxBrightness)>>8;
+			m_PWMValues[pmap[k+l+m_pinGrouping*2]]	=	( (unsigned int) b * m_maxBrightness)>>8;
 		}
 	}
 }
@@ -180,7 +179,7 @@ void CShiftPWM::SetAllHSV(unsigned int hue, unsigned int sat, unsigned int val){
 	// Set the first LED
 	SetHSV(0, hue, sat, val);
 	// Copy RGB values all LED's.
-	SetAllRGB(m_PWMValues[0],m_PWMValues[m_pinGrouping],m_PWMValues[2*m_pinGrouping]);
+	SetAllRGB(m_PWMValues[pmap[0]],m_PWMValues[pmap[m_pinGrouping]],m_PWMValues[pmap[2*m_pinGrouping]]);
 }
 
 // OneByOne functions are usefull for testing all your outputs
@@ -189,7 +188,7 @@ void CShiftPWM::OneByOneSlow(void){
 }
 
 void CShiftPWM::OneByOneFast(void){
-	OneByOne_core(1);
+	OneByOne_core(200);
 }
 
 void CShiftPWM::OneByOne_core(int delaytime){
@@ -197,12 +196,12 @@ void CShiftPWM::OneByOne_core(int delaytime){
 	SetAll(0);
 	for(int pin=0;pin<m_amountOfOutputs;pin++){
 		for(brightness=0;brightness<m_maxBrightness;brightness++){
-			m_PWMValues[pin]=brightness;
-			delay(delaytime);
+			m_PWMValues[pmap[pin]]=brightness;
+			delayMicroseconds(delaytime);
 		}
 		for(brightness=m_maxBrightness;brightness>=0;brightness--){
-			m_PWMValues[pin]=brightness;
-			delay(delaytime);
+			m_PWMValues[pmap[pin]]=brightness;
+			delayMicroseconds(delaytime);
 		}
 	}
 }
